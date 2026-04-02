@@ -432,9 +432,17 @@ footer a{color:var(--purple);text-decoration:none;font-weight:600}
   </div>
 
   <div class="info-box green">
-    <div class="info-box-title">Max Offer for Positive Cash Flow</div>
+    <div class="info-box-title" style="display:flex;align-items:center;justify-content:space-between">
+      <span>Max Offer (ARV Formula)</span>
+      <span style="display:flex;align-items:center;gap:6px;font-weight:400;font-size:13px">
+        Deal&nbsp;%
+        <input type="number" id="dealPct" value="70" min="50" max="100" step="1"
+          style="width:52px;padding:2px 6px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit;text-align:center"
+          oninput="calc()">%
+      </span>
+    </div>
     <div style="font-size:22px;font-weight:800;color:var(--green)" id="maxOffer">$—</div>
-    <div class="note" id="maxOfferNote">Based on current income &amp; expense inputs</div>
+    <div class="note" id="maxOfferNote">ARV × 70% − Repairs</div>
   </div>
 
   <div id="zestBox" style="display:none;margin-top:12px">
@@ -1167,11 +1175,12 @@ function calc() {
   const fixedExp  = expTax + expIns + expHOA + expUtil + expOther + debtService;
   const varRate   = vacPct + mgmtPct + maintPct;
   const breakevenRent = varRate<1 ? fixedExp/(1-varRate) : fixedExp;
-  // Max offer = cap-rate based ceiling, further capped by the active scenario's upper MV bound
-  const SCENARIO_CEILING = { deal: 0.80, market: 1.00, custom: 1.10 };
-  const scenarioCap = v('marketValue') * (SCENARIO_CEILING[S.scenario] ?? 1.10);
-  const cfMaxOffer  = grossRent > 0 ? annualNOI / (S.finType === 'cash' ? 0.07 : 0.075) : 0;
-  const maxOfferCalc = Math.min(cfMaxOffer, scenarioCap);
+  // Max Offer = ARV × Deal% − Repairs
+  const dealPct       = Math.min(100, Math.max(50, v('dealPct') || 70)) / 100;
+  const rehabAmt      = S.finType === 'hardmoney' ? v('hmRehab')
+                      : S.finType === 'cash'      ? v('cashRehab')
+                      :                             v('convRehab');
+  const maxOfferCalc  = arv > 0 ? Math.max(0, arv * dealPct - rehabAmt) : 0;
 
   const rentG = mk.rentGrowth/100, appG = mk.appreciation/100;
   const proj = []; let runGross=grossRent, runExp=opEx;
@@ -1228,11 +1237,9 @@ function calc() {
   $('hPSF').textContent       = '$'+Math.round(psf)+'/sf';
   $('hPerUnit').textContent   = fmtD(Math.round(perUnit));
   $('maxOffer').textContent   = fmtD(Math.round(maxOfferCalc));
-  const scenarioBound = maxOfferCalc < cfMaxOffer;
-  const scenarioLabel = { deal:'Deal (80% MV cap)', market:'Market (100% MV cap)', custom:'Custom (110% MV cap)' };
-  $('maxOfferNote').textContent = scenarioBound
-    ? `Capped by ${scenarioLabel[S.scenario] || 'scenario'} · Cash flow max: ${fmtD(Math.round(cfMaxOffer))}`
-    : 'Based on cap rate vs. current NOI';
+  $('maxOfferNote').textContent = arv > 0
+    ? `ARV ${fmtD(Math.round(arv))} × ${Math.round(dealPct*100)}% − Repairs ${fmtD(rehabAmt)}`
+    : 'Enter ARV to calculate';
 
   const brrrrCtx = (S.finType==='hardmoney' && S.hmExit==='brrrr' && refiData) ? refiData : null;
   updateScore(monthlyCF, coc, capRate, rtv, dscr, brrrrCtx);
