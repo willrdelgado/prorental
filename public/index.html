@@ -432,15 +432,7 @@ footer a{color:var(--purple);text-decoration:none;font-weight:600}
   </div>
 
   <div class="info-box green">
-    <div class="info-box-title" style="display:flex;align-items:center;justify-content:space-between">
-      <span>Max Offer (ARV Formula)</span>
-      <span style="display:flex;align-items:center;gap:6px;font-weight:400;font-size:13px">
-        Deal&nbsp;%
-        <input type="number" id="dealPct" value="70" min="50" max="100" step="1"
-          style="width:52px;padding:2px 6px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit;text-align:center"
-          oninput="calc()">%
-      </span>
-    </div>
+    <div class="info-box-title">Max Offer (ARV Formula)</div>
     <div style="font-size:22px;font-weight:800;color:var(--green)" id="maxOffer">$—</div>
     <div class="note" id="maxOfferNote">ARV × 70% − Repairs</div>
   </div>
@@ -1176,7 +1168,7 @@ function calc() {
   const varRate   = vacPct + mgmtPct + maintPct;
   const breakevenRent = varRate<1 ? fixedExp/(1-varRate) : fixedExp;
   // Max Offer = ARV × Deal% − Repairs
-  const dealPct       = Math.min(100, Math.max(50, v('dealPct') || 70)) / 100;
+  const dealPct       = parseFloat($('offerSlider').value) / 100;
   const rehabAmt      = S.finType === 'hardmoney' ? v('hmRehab')
                       : S.finType === 'cash'      ? v('cashRehab')
                       :                             v('convRehab');
